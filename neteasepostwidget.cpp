@@ -9,6 +9,8 @@
 #include <KMenu>
 #include <KPushButton>
 
+static const KIcon unFavIcon( Choqok::MediaManager::convertToGrayScale( KIcon( "rating" ).pixmap( 16 ) ) );
+
 NeteasePostWidget::NeteasePostWidget( NeteaseAccount* account, const Choqok::Post& post, QWidget* parent )
 : Choqok::UI::PostWidget(account,post,parent)
 {
@@ -57,14 +59,14 @@ void NeteasePostWidget::initUi()
         }
         else {
             favoriteButton->setChecked( false );
-            favoriteButton->setIcon( Choqok::MediaManager::convertToGrayScale(KIcon("rating").pixmap(16)) );
+            favoriteButton->setIcon( unFavIcon );
         }
     }
 }
 
 void NeteasePostWidget::slotResendPost()
 {
-    setReadInternal();
+    setReadWithSignal();
     NeteaseMicroBlog* microblog = dynamic_cast<NeteaseMicroBlog*>(currentAccount()->microblog());
     Choqok::Post* post = new Choqok::Post;
     post->postId = currentPost().postId;
@@ -88,7 +90,7 @@ void NeteasePostWidget::slotReplyAll()
 
 void NeteasePostWidget::slotFavorite()
 {
-    setReadInternal();
+    setReadWithSignal();
     NeteaseMicroBlog* microblog = dynamic_cast<NeteaseMicroBlog*>(currentAccount()->microblog());
     Choqok::Post* post = new Choqok::Post;
     post->postId = currentPost().postId;
@@ -121,5 +123,5 @@ void NeteasePostWidget::slotFavoriteRemoved( Choqok::Account* account, Choqok::P
     tmp.isFavorited = false;
     setCurrentPost( tmp );
     favoriteButton->setChecked( false );
-    favoriteButton->setIcon( Choqok::MediaManager::convertToGrayScale(KIcon("rating").pixmap(16)) );
+    favoriteButton->setIcon( unFavIcon );
 }

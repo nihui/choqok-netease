@@ -22,10 +22,14 @@ class NeteaseAccount : public Choqok::Account
         const QByteArray oauthToken() const;
         void setOauthTokenSecret( const QByteArray& tokenSecret );
         const QByteArray oauthTokenSecret() const;
+
+        QStringList timelineNames() const;
+        void setTimelineNames( const QStringList& list );
     private:
         QOAuth::Interface* qoauth;
         QByteArray m_oauthToken;
         QByteArray m_oauthTokenSecret;
+        QStringList m_timelineNames;
 };
 
 #endif // NETEASEACCOUNT_H

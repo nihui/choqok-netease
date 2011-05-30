@@ -20,6 +20,8 @@ class NeteaseEditAccountWidget : public ChoqokEditAccountWidget, public Ui::Nete
     private:
         void getPinCode();
         void setAuthenticated( bool authenticated );
+        void loadTimelinesTableState();
+        void saveTimelinesTableState();
     private:
         QByteArray token;
         QByteArray tokenSecret;

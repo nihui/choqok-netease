@@ -13,6 +13,8 @@
 
 #include <QtOAuth/QtOAuth>
 
+#include <QCheckBox>
+
 NeteaseEditAccountWidget::NeteaseEditAccountWidget( NeteaseMicroBlog* microblog, NeteaseAccount* account, QWidget* parent )
 : ChoqokEditAccountWidget(account,parent)
 {
@@ -43,6 +45,7 @@ NeteaseEditAccountWidget::NeteaseEditAccountWidget( NeteaseMicroBlog* microblog,
         setAccount( new NeteaseAccount( microblog, newAccountAlias ) );
         kcfg_alias->setText( newAccountAlias );
     }
+    loadTimelinesTableState();
     kcfg_alias->setFocus( Qt::OtherFocusReason );
 
 }
@@ -63,7 +66,7 @@ Choqok::Account* NeteaseEditAccountWidget::apply()
     acc->setUsername( username );
     acc->setOauthToken( token );
     acc->setOauthTokenSecret( tokenSecret );
-//     saveTimelinesTableState();
+    saveTimelinesTableState();
     acc->writeConfig();
     return acc;
 }
@@ -134,4 +137,32 @@ void NeteaseEditAccountWidget::setAuthenticated( bool authenticated )
         kcfg_authenticateLed->off();
         kcfg_authenticateStatus->setText( i18n( "Not Authenticated" ) );
     }
+}
+
+void NeteaseEditAccountWidget::loadTimelinesTableState()
+{
+    NeteaseAccount* acc = static_cast<NeteaseAccount*>(account());
+    foreach ( const QString& timeline, acc->microblog()->timelineNames() ){
+        int newRow = timelinesTable->rowCount();
+        timelinesTable->insertRow( newRow );
+        timelinesTable->setItem( newRow, 0, new QTableWidgetItem( timeline ) );
+
+        QCheckBox *enable = new QCheckBox( timelinesTable );
+        enable->setChecked( acc->timelineNames().contains( timeline ) );
+        timelinesTable->setCellWidget( newRow, 1, enable );
+    }
+}
+
+void NeteaseEditAccountWidget::saveTimelinesTableState()
+{
+    NeteaseAccount* acc = static_cast<NeteaseAccount*>(account());
+    QStringList timelines;
+    int rowCount = timelinesTable->rowCount();
+    for ( int i = 0; i < rowCount; ++i ) {
+        QCheckBox* enable = qobject_cast<QCheckBox*>(timelinesTable->cellWidget( i, 1 ));
+        if ( enable && enable->isChecked() )
+            timelines << timelinesTable->item( i, 0 )->text();
+    }
+    timelines.removeDuplicates();
+    acc->setTimelineNames( timelines );
 }

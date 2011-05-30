@@ -18,7 +18,7 @@
      </property>
      <widget class="QWidget" name="tabAccount">
       <attribute name="title">
-       <string>Twitter Account</string>
+       <string>Netease Account</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout">
        <item row="0" column="0">

@@ -13,6 +13,7 @@ NeteaseAccount::NeteaseAccount( NeteaseMicroBlog* parent, const QString& alias )
 {
     m_oauthToken = configGroup()->readEntry( QString( "%1_OAuthToken" ).arg( alias ), QByteArray() );
     m_oauthTokenSecret = Choqok::PasswordManager::self()->readPassword( QString( "%1_OAuthTokenSecret" ).arg( alias ) ).toUtf8();
+    m_timelineNames = configGroup()->readEntry( QString( "%1_Timelines" ).arg( alias ), QStringList() );
 
     /// TODO KDE 4.5 Change to use new class
     qoauth = new QOAuth::Interface;//( new KIO::AccessManager( this ), this );
@@ -32,6 +33,7 @@ void NeteaseAccount::writeConfig()
     configGroup()->writeEntry( QString( "%1_OAuthToken" ).arg( alias() ), m_oauthToken );
     Choqok::PasswordManager::self()->writePassword( QString( "%1_OAuthTokenSecret" ).arg( alias() ),
                                                     QString::fromUtf8( m_oauthTokenSecret ) );
+    configGroup()->writeEntry( QString( "%1_Timelines" ).arg( alias() ), m_timelineNames );
     Choqok::Account::writeConfig();
 }
 
@@ -68,4 +70,18 @@ void NeteaseAccount::setOauthTokenSecret( const QByteArray& tokenSecret )
 const QByteArray NeteaseAccount::oauthTokenSecret() const
 {
     return m_oauthTokenSecret;
+}
+
+QStringList NeteaseAccount::timelineNames() const
+{
+    return m_timelineNames;
+}
+
+void NeteaseAccount::setTimelineNames( const QStringList& list )
+{
+    m_timelineNames.clear();
+    foreach ( const QString& name, list ) {
+        if ( microblog()->timelineNames().contains( name ) )
+            m_timelineNames << name;
+    }
 }
