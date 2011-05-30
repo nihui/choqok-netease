@@ -5,6 +5,7 @@
 #include "neteasepostwidget.h"
 
 #include <choqok/accountmanager.h>
+#include <choqok/application.h>
 #include <choqok/choqokbehaviorsettings.h>
 #include <choqok/notifymanager.h>
 #include <choqok/postwidget.h>
@@ -334,9 +335,11 @@ void NeteaseMicroBlog::saveTimeline( Choqok::Account* account, const QString& ti
         ++it;
     }
     postsBackup.sync();
-    --m_countOfTimelinesToSave;
-    if ( m_countOfTimelinesToSave < 1 )
-        emit readyForUnload();
+    if ( Choqok::Application::isShuttingDown() ) {
+        --m_countOfTimelinesToSave;
+        if ( m_countOfTimelinesToSave < 1 )
+            emit readyForUnload();
+    }
 }
 
 QList<Choqok::Post*> NeteaseMicroBlog::loadTimeline( Choqok::Account* theAccount, const QString& timelineName )
@@ -413,12 +416,9 @@ void NeteaseMicroBlog::updateTimelines( Choqok::Account* theAccount )
 
     int countOfPost = Choqok::BehaviorSettings::countOfPosts();
 
-    QHash<QString, QString>::ConstIterator it = m_timelineApiPath.constBegin();
-    QHash<QString, QString>::ConstIterator end = m_timelineApiPath.constEnd();
-    while ( it != end ) {
+    foreach ( const QString& timelineName, acc->timelineNames() ) {
         KUrl url( apiUrl );
-        url.addPath( it.value() );
-        QString timelineName = it.key();
+        url.addPath( m_timelineApiPath[ timelineName ] );
         QString latestStatusId = m_timelineLatestId[ acc ][ timelineName ];
 
         QOAuth::ParamMap params;
@@ -437,8 +437,6 @@ void NeteaseMicroBlog::updateTimelines( Choqok::Account* theAccount )
         m_jobAccount[job] = acc;
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotRequestTimeline(KJob*)) );
         job->start();
-
-        ++it;
     }
 }
 

@@ -23,7 +23,7 @@ class NeteaseAccount : public Choqok::Account
         void setOauthTokenSecret( const QByteArray& tokenSecret );
         const QByteArray oauthTokenSecret() const;
 
-        QStringList timelineNames() const;
+        virtual QStringList timelineNames() const;
         void setTimelineNames( const QStringList& list );
     private:
         QOAuth::Interface* qoauth;
