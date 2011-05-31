@@ -161,20 +161,13 @@ void NeteaseMicroBlog::createPost( Choqok::Account* theAccount, Choqok::Post* po
         url.addPath( "/direct_messages/new.json" );
 
         params.insert( "user", post->replyToUserName.toUtf8() );
-        data = "user=";
-        data += post->replyToUserName.toUtf8();
         params.insert( "text", QUrl::toPercentEncoding( post->content ) );
-        data += "&text=";
-        data += QUrl::toPercentEncoding( post->content );
-        params.insert( "source", "Choqok" );
-        data += "&source=Choqok";
 
-        KIO::StoredTransferJob* job = KIO::storedHttpPost( data, url, KIO::HideProgressInfo );
         QOAuth::Interface* qoauth = acc->qoauthInterface();
-        QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
+        data = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
+                                               QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+        KIO::StoredTransferJob* job = KIO::storedHttpPost( data, url, KIO::HideProgressInfo );
         job->addMetaData( "content-type", "Content-Type: application/x-www-form-urlencoded" );
-        job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
         m_createPost[ job ] = post;
         m_jobAccount[ job ] = acc;
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotCreatePost(KJob*)) );
@@ -186,22 +179,16 @@ void NeteaseMicroBlog::createPost( Choqok::Account* theAccount, Choqok::Post* po
         url.addPath( "/statuses/update.json" );
 
         params.insert( "status", QUrl::toPercentEncoding( post->content ) );
-        data = "status=";
-        data += QUrl::toPercentEncoding( post->content );
         if ( !post->replyToPostId.isEmpty() ) {
             params.insert( "in_reply_to_status_id", post->replyToPostId.toUtf8() );
-            data += "&in_reply_to_status_id=";
-            data += post->replyToPostId.toUtf8();
         }
-        params.insert( "source", "Choqok" );
-        data += "&source=Choqok";
+
+        QOAuth::Interface* qoauth = acc->qoauthInterface();
+        data = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
+                                               QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
 
         KIO::StoredTransferJob* job = KIO::storedHttpPost( data, url, KIO::HideProgressInfo );
-        QOAuth::Interface* qoauth = acc->qoauthInterface();
-        QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
         job->addMetaData( "content-type", "Content-Type: application/x-www-form-urlencoded" );
-        job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
         m_createPost[ job ] = post;
         m_jobAccount[ job ] = acc;
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotCreatePost(KJob*)) );
@@ -240,11 +227,12 @@ void NeteaseMicroBlog::fetchPost( Choqok::Account* theAccount, Choqok::Post* pos
     url.addPath( QString( "/statuses/show/%1.json" ).arg( post->postId ) );
 
     QOAuth::ParamMap params;
-    KIO::StoredTransferJob* job = KIO::storedGet( url, KIO::Reload, KIO::HideProgressInfo );
+    params.insert( "id", post->postId.toUtf8() );
     QOAuth::Interface* qoauth = acc->qoauthInterface();
     QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::GET, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-    job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForInlineQuery );
+    url.setQuery( hs );
+    KIO::StoredTransferJob* job = KIO::storedGet( url, KIO::Reload, KIO::HideProgressInfo );
     m_fetchPost[ job ] = post;
     m_jobAccount[ job ] = acc;
     connect( job, SIGNAL(result(KJob*)), this, SLOT(slotFetchPost(KJob*)) );
@@ -265,11 +253,11 @@ void NeteaseMicroBlog::removePost( Choqok::Account* theAccount, Choqok::Post* po
         url.addPath( QString( "/direct_messages/destroy/%1.json" ).arg( post->postId ) );
 
         QOAuth::ParamMap params;
-        KIO::StoredTransferJob* job = KIO::storedHttpPost( QByteArray(), url, KIO::HideProgressInfo );
+        params.insert( "id", post->postId.toUtf8() );
         QOAuth::Interface* qoauth = acc->qoauthInterface();
         QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-        job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+        KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
         m_removePost[ job ] = post;
         m_jobAccount[ job ] = acc;
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotRemovePost(KJob*)) );
@@ -281,11 +269,11 @@ void NeteaseMicroBlog::removePost( Choqok::Account* theAccount, Choqok::Post* po
         url.addPath( QString( "/statuses/destroy/%1.json" ).arg( post->postId ) );
 
         QOAuth::ParamMap params;
-        KIO::StoredTransferJob* job = KIO::storedHttpPost( QByteArray(), url, KIO::HideProgressInfo );
+        params.insert( "id", post->postId.toUtf8() );
         QOAuth::Interface* qoauth = acc->qoauthInterface();
         QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-        job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+        KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
         m_removePost[ job ] = post;
         m_jobAccount[ job ] = acc;
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotRemovePost(KJob*)) );
@@ -428,11 +416,11 @@ void NeteaseMicroBlog::updateTimelines( Choqok::Account* theAccount )
         }
         params.insert( "count", QByteArray::number( countOfPost ) );
 
-        KIO::StoredTransferJob* job = KIO::storedGet( url, KIO::Reload, KIO::HideProgressInfo );
         QOAuth::Interface* qoauth = acc->qoauthInterface();
         QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::GET, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-        job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                        QOAuth::HMAC_SHA1, params, QOAuth::ParseForInlineQuery );
+        url.setQuery( hs );
+        KIO::StoredTransferJob* job = KIO::storedGet( url, KIO::Reload, KIO::HideProgressInfo );
         m_jobTimeline[job] = timelineName;
         m_jobAccount[job] = acc;
         connect( job, SIGNAL(result(KJob*)), this, SLOT(slotRequestTimeline(KJob*)) );
@@ -474,12 +462,10 @@ void NeteaseMicroBlog::retweetPost( Choqok::Account* theAccount, Choqok::Post* p
 
     QOAuth::ParamMap params;
     params.insert( "id", post->postId.toUtf8() );
-    params.insert( "source", "Choqok" );
-    KIO::StoredTransferJob* job = KIO::storedHttpPost( QByteArray(), url, KIO::HideProgressInfo );
     QOAuth::Interface* qoauth = acc->qoauthInterface();
     QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-    job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+    KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
     m_createPost[ job ] = post;
     m_jobAccount[ job ] = acc;
     connect( job, SIGNAL(result(KJob*)), this, SLOT(slotCreatePost(KJob*)) );
@@ -500,11 +486,10 @@ void NeteaseMicroBlog::createFavorite( Choqok::Account* theAccount, Choqok::Post
 
     QOAuth::ParamMap params;
     params.insert( "id", post->postId.toUtf8() );
-    KIO::StoredTransferJob* job = KIO::storedHttpPost( QByteArray(), url, KIO::HideProgressInfo );
     QOAuth::Interface* qoauth = acc->qoauthInterface();
     QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-    job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+    KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
     m_createFavorite[ job ] = post;
     m_jobAccount[ job ] = acc;
     connect( job, SIGNAL(result(KJob*)), this, SLOT(slotCreateFavorite(KJob*)) );
@@ -525,11 +510,10 @@ void NeteaseMicroBlog::removeFavorite( Choqok::Account* theAccount, Choqok::Post
 
     QOAuth::ParamMap params;
     params.insert( "id", post->postId.toUtf8() );
-    KIO::StoredTransferJob* job = KIO::storedHttpPost( QByteArray(), url, KIO::HideProgressInfo );
     QOAuth::Interface* qoauth = acc->qoauthInterface();
     QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
-    job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
+                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+    KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
     m_removeFavorite[ job ] = post;
     m_jobAccount[ job ] = acc;
     connect( job, SIGNAL(result(KJob*)), this, SLOT(slotRemoveFavorite(KJob*)) );
@@ -549,24 +533,18 @@ void NeteaseMicroBlog::createFriendship( Choqok::Account* theAccount, Choqok::Us
     url.addPath( "/friendships/create.json" );
 
     QOAuth::ParamMap params;
-    QByteArray data;
     if ( user->userId.isEmpty() ) {
         params.insert( "screen_name", user->userName.toUtf8() );
-        data = "screen_name=";
-        data += user->userName.toUtf8();
     }
     else {
         params.insert( "user_id", user->userId.toUtf8() );
-        data = "user_id=";
-        data += user->userId.toUtf8();
     }
 
-    KIO::StoredTransferJob* job = KIO::storedHttpPost( data, url, KIO::HideProgressInfo );
     QOAuth::Interface* qoauth = acc->qoauthInterface();
     QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
+                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+    KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
     job->addMetaData( "content-type", "Content-Type: application/x-www-form-urlencoded" );
-    job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
     m_createFriendship[ job ] = user;
     m_jobAccount[ job ] = acc;
     connect( job, SIGNAL(result(KJob*)), this, SLOT(slotCreateFriendship(KJob*)) );
@@ -586,24 +564,18 @@ void NeteaseMicroBlog::removeFriendship( Choqok::Account* theAccount, Choqok::Us
     url.addPath( "/friendships/destroy.json" );
 
     QOAuth::ParamMap params;
-    QByteArray data;
     if ( user->userId.isEmpty() ) {
         params.insert( "screen_name", user->userName.toUtf8() );
-        data = "screen_name=";
-        data += user->userName.toUtf8();
     }
     else {
         params.insert( "user_id", user->userId.toUtf8() );
-        data = "user_id=";
-        data += user->userId.toUtf8();
     }
 
-    KIO::StoredTransferJob* job = KIO::storedHttpPost( data, url, KIO::HideProgressInfo );
     QOAuth::Interface* qoauth = acc->qoauthInterface();
     QByteArray hs = qoauth->createParametersString( url.url(), QOAuth::POST, acc->oauthToken(), acc->oauthTokenSecret(),
-                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForHeaderArguments );
+                                                    QOAuth::HMAC_SHA1, params, QOAuth::ParseForRequestContent );
+    KIO::StoredTransferJob* job = KIO::storedHttpPost( hs, url, KIO::HideProgressInfo );
     job->addMetaData( "content-type", "Content-Type: application/x-www-form-urlencoded" );
-    job->addMetaData( "customHTTPHeader", "Authorization: " + hs );
     m_removeFriendship[ job ] = user;
     m_jobAccount[ job ] = acc;
     connect( job, SIGNAL(result(KJob*)), this, SLOT(slotRemoveFriendship(KJob*)) );
