@@ -79,13 +79,13 @@ void NeteasePostWidget::slotReply()
 
 void NeteasePostWidget::slotWrite()
 {
-    emit reply( QString("@%1").arg( currentPost().author.userName ), QString() );
+    emit reply( QString("@%1").arg( currentPost().author.userName ), QString(), currentPost().author.userName );
 }
 
 void NeteasePostWidget::slotReplyAll()
 {
     QString txt = QString("@%1").arg( currentPost().author.userName );
-    emit reply( txt, currentPost().postId );
+    emit reply( txt, currentPost().postId, currentPost().author.userName );
 }
 
 void NeteasePostWidget::slotFavorite()
